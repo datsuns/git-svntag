@@ -1,0 +1,48 @@
+#!/usr/bin/env ruby
+require 'open3'
+
+URL = ARGV[0]
+puts "start clone #{URL}"
+
+class RevisionInfo
+  def initialize svn_revision, git_sha1
+    @svn_revision = svn_revision
+    @git_sha1 = git_sha1
+  end
+  attr_reader :svn_revision, :git_sha1
+end
+
+def rivision_log? str
+  str.match(/^r[0-9]+ = /)
+end
+
+def git_initialized_log? str
+  str.match(/Initialized empty Git repository in.*/)
+end
+
+def parse_initialized_log str
+  items = str.split ' '
+  items[5]
+end
+
+def parse_revision_log str
+  items = str.split ' '
+  RevisionInfo.new items[0], items[2]
+end
+
+cmd = "git svn clone #{URL}"
+dest_dir = ''
+revisions = []
+Open3.popen3(cmd) do |stdin, stdout, stderr| 
+  stdout.readlines.each do |line|
+    dest_dir = parse_initialized_log line if git_initialized_log? line
+    next if not rivision_log? line
+    revisions << parse_revision_log(line)
+  end
+end
+
+Dir.chdir "#{dest_dir}/.."
+revisions.each do |revision|
+  cmd = "git checkout #{revision.git_sha1} && git tag #{revision.svn_revision}"
+  system cmd
+end

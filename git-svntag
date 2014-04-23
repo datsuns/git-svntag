@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 require 'open3'
 
-URL = ARGV[0]
-puts "start clone #{URL}"
+EXEC_OPTION = ARGV.join(' ')
+puts "start clone #{EXEC_OPTION}"
 
 class RevisionInfo
   def initialize svn_revision, git_sha1
@@ -30,7 +30,7 @@ def parse_revision_log str
   RevisionInfo.new items[0], items[2]
 end
 
-cmd = "git svn clone #{URL}"
+cmd = "git svn clone #{EXEC_OPTION}"
 dest_dir = ''
 revisions = []
 Open3.popen3(cmd) do |stdin, stdout, stderr| 
